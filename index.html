@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ganitagya Rupesh</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0f172a">
+
+<style>
+body{font-family:Arial;background:#0f172a;margin:0;color:#fff}
+.container{max-width:1200px;margin:auto;padding:20px}
+h1{text-align:center}
+.card{background:#1e293b;padding:15px;border-radius:12px;margin-bottom:15px}
+input,button{padding:10px;margin:5px;width:100%;border-radius:8px;border:none}
+input{background:#334155;color:#fff}
+button{background:#22c55e;color:#000;font-weight:bold;cursor:pointer}
+button:hover{background:#16a34a}
+table{width:100%;border-collapse:collapse}
+th,td{padding:10px;text-align:center}
+th{background:#22c55e;color:#000}
+tr:nth-child(even){background:#1e293b}
+.delete{background:#ef4444;color:#fff}
+.edit{background:#3b82f6;color:#fff}
+.export{background:#f59e0b;color:#000}
+.stats{display:flex;gap:10px}
+.stat{flex:1;background:#1e293b;padding:10px;border-radius:10px;text-align:center}
+</style>
+</head>
+
+<body>
+<div class="container">
+<h1>🔥 SANKLP</h1>
+
+<div class="card">
+<input id="name" placeholder="Item Name">
+<input id="qty" type="number" placeholder="Quantity">
+<input id="category" placeholder="Category">
+<input id="price" type="number" placeholder="Price (₹)">
+<button onclick="addItem()">Add / Update</button>
+<input id="search" placeholder="Search..." onkeyup="searchItem()">
+<button class="export" onclick="exportCSV()">📤 Export CSV</button>
+</div>
+
+<div class="stats">
+<div class="stat">Items: <span id="totalItems">0</span></div>
+<div class="stat">Qty: <span id="totalQty">0</span></div>
+<div class="stat">Value ₹: <span id="totalValue">0</span></div>
+</div>
+
+<div class="card">
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Qty</th>
+<th>Category</th>
+<th>Price</th>
+<th>Total</th>
+<th>Action</th>
+</tr>
+</thead>
+<tbody id="table"></tbody>
+</table>
+</div>
+</div>
+
+<script>
+let data = JSON.parse(localStorage.getItem('inventory')) || [];
+let editIndex = -1;
+
+const nameEl = document.getElementById('name');
+const qtyEl = document.getElementById('qty');
+const categoryEl = document.getElementById('category');
+const priceEl = document.getElementById('price');
+const searchEl = document.getElementById('search');
+
+function save(){
+localStorage.setItem('inventory', JSON.stringify(data));
+}
+
+function render(list=data){
+let table="";
+let totalQty=0, totalValue=0;
+
+list.forEach((item,i)=>{
+let total = item.qty * item.price;
+totalQty += Number(item.qty);
+totalValue += total;
+
+table += `<tr>
+<td>${item.name}</td>
+<td>${item.qty}</td>
+<td>${item.category}</td>
+<td>₹${item.price}</td>
+<td>₹${total}</td>
+<td>
+<button class="edit" onclick="editItem(${i})">Edit</button>
+<button class="delete" onclick="deleteItem(${i})">Delete</button>
+</td>
+</tr>`;
+});
+
+document.getElementById('table').innerHTML = table;
+document.getElementById('totalItems').innerText = list.length;
+document.getElementById('totalQty').innerText = totalQty;
+document.getElementById('totalValue').innerText = totalValue;
+}
+
+function addItem(){
+let name = nameEl.value;
+let qty = qtyEl.value;
+let category = categoryEl.value;
+let price = priceEl.value;
+
+if(!name || !qty || !category || !price){
+alert("Fill all fields"); return;
+}
+
+if(editIndex==-1){
+data.push({name,qty,category,price});
+}else{
+data[editIndex]={name,qty,category,price};
+editIndex=-1;
+}
+
+save(); render(); clearForm();
+}
+
+function editItem(i){
+let item=data[i];
+nameEl.value=item.name;
+qtyEl.value=item.qty;
+categoryEl.value=item.category;
+priceEl.value=item.price;
+editIndex=i;
+}
+
+function deleteItem(i){
+data.splice(i,1);
+save(); render();
+}
+
+function searchItem(){
+let val = searchEl.value.toLowerCase();
+let filtered = data.filter(x=>x.name.toLowerCase().includes(val));
+render(filtered);
+}
+
+function clearForm(){
+nameEl.value=""; qtyEl.value=""; categoryEl.value=""; priceEl.value="";
+}
+
+function exportCSV(){
+let csv = "Name,Qty,Category,Price\n";
+data.forEach(i=>{
+csv += `${i.name},${i.qty},${i.category},${i.price}\n`;
+});
+
+let blob = new Blob([csv], { type: 'text/csv' });
+let url = window.URL.createObjectURL(blob);
+let a = document.createElement('a');
+a.href = url;
+a.download = "inventory.csv";
+a.click();
+}
+
+render();
+
+if('serviceWorker' in navigator){
+navigator.serviceWorker.register('service-worker.js');
+}
+</script>
+</body>
+</html>
